@@ -14,7 +14,7 @@
                                                         // For example PATH cannot be "/home/ozgur/workspace/assignment2/sources/"
 #define PORT_NO 8888
 #define BUFFER_SIZE 1024
-#define CONNECTION_NUMBER 10
+#define CONNECTION_NUMBER 5
 
 int thread_count = 0; // Keeps the number of the threads working simultaneously.
 sem_t mutex; // To control thread_counter.
@@ -108,7 +108,7 @@ void *connection_handler(void *socket_desc)
     sem_wait(&mutex);
     thread_count++;
 
-    if(thread_count > 10) // If there is 10 request at the same time, other request will be refused.
+    if(thread_count > CONNECTION_NUMBER) // If there is 10 request at the same time, other request will be refused.
     {
         char *message = "HTTP/1.0 400 Bad Request\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>System is busy right now.</body></html>";
         write(sock, message, strlen(message));
@@ -203,7 +203,7 @@ void *connection_handler(void *socket_desc)
         }
     }
 
-    //sleep(50); // If you want to see just 10 thread is working simultaneously, you can sleep here.
+    sleep(10); // If you want to see just 10 thread is working simultaneously, you can sleep here.
     // After send 10 request, 11th request will be responded as "System is busy right now".
 
     free(socket_desc);
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    listen(socket_desc, 20);
+    listen(socket_desc, 11);
 
     puts("Waiting for incoming connections...");
     c = sizeof(struct sockaddr_in);
