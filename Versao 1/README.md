@@ -8,4 +8,4 @@ Para execução do projeto:
    * ./serverV1
 
 Acesso no navegador: 
-   * http://localhost:8080/index.html
+   * http://localhost:8080/htmlexample.html
