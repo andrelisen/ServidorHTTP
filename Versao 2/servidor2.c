@@ -1,19 +1,4 @@
-
-#include <stdio.h>
-#include <string.h> // for strlen
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <arpa/inet.h> // for inet_addr
-#include <unistd.h>    // for write
-#include <pthread.h>   // for threading, link with lpthread
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <semaphore.h>
-
 //biblioteca das funções
-#include <stdio.h>
-#include <string.h> // for strlen
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <arpa/inet.h> // for inet_addr
@@ -23,19 +8,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <semaphore.h>
-#include "renderizaImgs.h"
-#include "renderizaTxt.h"
 #include "conexao.h"
+#include "servidor2.h"
+#include "manipulaSocketImg.h"
+#include "manipulaSocketTxt.h"
 
-#define PORT_NO 8080 // numero da porta
-#define BUFFER_SIZE 1024 // tamanho buffer do socket
-#define CONNECTION_NUMBER 20 // quantidade maxima de threads simultaneas
-
-#define EOL "\r\n" // end of line
-#define EOL_SIZE 2
-
-int thread_count = 0; //contador do numero de threads ativas ao mesmo tempo
-sem_t mutex; // para controlar o contador de threads
 
 int main(int argc, char *argv[]){
     sem_init(&mutex, 0, 1); // Inıcializa mutex com 1.

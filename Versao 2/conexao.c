@@ -1,5 +1,18 @@
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <arpa/inet.h> // for inet_addr
+#include <unistd.h>    // for write
+#include <pthread.h>   // for threading, link with lpthread
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <semaphore.h>
 #include "conexao.h"
-#include "servidor2.c"
+#include "servidor2.h"
+#include "manipulaSocketImg.h"
+#include "manipulaSocketTxt.h"
+
+int thread_count = 0; //contador do numero de threads ativas ao mesmo tempo
 
 void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do cliente, manipular e administrar as threads
     int request;

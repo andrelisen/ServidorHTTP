@@ -1,0 +1,61 @@
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <arpa/inet.h> // for inet_addr
+#include <unistd.h>    // for write
+#include <pthread.h>   // for threading, link with lpthread
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <semaphore.h>
+#include "conexao.h"
+#include "servidor2.h"
+#include "manipulaSocketImg.h"
+#include "manipulaSocketTxt.h"
+
+//importante: ao tentar acessar imagens em outra pasta, ele esta dando erro de corrupted_size vs prev_size. Tem a ver com sobreescrita de tamanhos..
+// possivelmente problema com alocação da memória? Acontece quando html chama as imagens.
+void image_handler(int socket, char *file_name){ // le e escreve arquivos de imagem no socket
+      char *tok, *nnfile, *ponto;
+      char *nfile = (char*)malloc((strlen(file_name)-1)*sizeof(char)); // aloca espaço para nfile, com tamanho -1 de filename
+      int fp;
+      int flg = 0;
+      char pt = '.';
+
+      strcpy(nfile,&file_name[1]); // copia conteudo de filename a partir da 2 posicao para n pegar /
+      printf("%s\n",nfile );
+
+      tok = strtok(nfile,"/");// procura por uma / no meio da string
+      if(tok != NULL){ // se encontra outro / em nfile, entao existe subpasta
+          puts ("Encontrou uma subpasta");
+          ponto = (char*)malloc((strlen(file_name)+1)*sizeof(char)); // aumenta o tamanho para 1  a mais q file_name
+          ponto[0] = '\0';//inicializa ponto com \0 indicando string vazia
+          nnfile = (char*)malloc((strlen(file_name))*sizeof(char));
+          strncat(ponto,&pt,1);
+          strcpy(nnfile,file_name); // copia conteudo de file_name
+          strcat(ponto,nnfile); // coloca na frente o . para string ficar: ./pasta/arquivo.ext
+          flg = 1;
+          printf("ponto: %s\n", ponto);
+      }
+
+      if (!flg) // nao sei se isso aqui esta fazendo certo, parece que  ele esta entrando no if do tok sempre
+        fp = open(nfile, O_RDONLY); // mas seria para escolher qual string abrir, dependendo se tem subpasta ou n
+      else
+        fp = open(ponto, O_RDONLY);
+
+      if (fp > 0){ //se fp nao é 0 então achou o arquivo
+          puts("Imagem encontrada.");
+          int bytes;
+          char buffer[BUFFER_SIZE];
+
+          send(socket, "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n", 45, 0);
+  	      while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // ler o arquivo no buffer enquanto nao chega no fim
+  			  write (socket, buffer, bytes); // envia o conteudo no buffer para o socket
+      } else { //  nao achou arquivo
+          puts("Imagem não encontrar no Servidor!");
+          write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+      }
+      close(fp);
+      free(nfile);
+      //free(nnfile);
+      //free(ponto);
+}
