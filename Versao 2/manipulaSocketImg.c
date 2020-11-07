@@ -1,20 +1,13 @@
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <arpa/inet.h> // for inet_addr
 #include <unistd.h>    // for write
-#include <pthread.h>   // for threading, link with lpthread
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <semaphore.h>
-#include "conexao.h"
 #include "servidor2.h"
 #include "manipulaSocketImg.h"
-#include "manipulaSocketTxt.h"
 
 //importante: ao tentar acessar imagens em outra pasta, ele esta dando erro de corrupted_size vs prev_size. Tem a ver com sobreescrita de tamanhos..
 // possivelmente problema com alocação da memória? Acontece quando html chama as imagens.
-void image_handler(int socket, char *file_name){ // le e escreve arquivos de imagem no socket
+void image_handler(int socket, char *file_name, char *ext){ // le e escreve arquivos de imagem no socket
+      puts("===== Entrou em image handler =====");
+
       char *tok, *nnfile, *ponto;
       char *nfile = (char*)malloc((strlen(file_name)-1)*sizeof(char)); // aloca espaço para nfile, com tamanho -1 de filename
       int fp;
@@ -43,19 +36,26 @@ void image_handler(int socket, char *file_name){ // le e escreve arquivos de ima
         fp = open(ponto, O_RDONLY);
 
       if (fp > 0){ //se fp nao é 0 então achou o arquivo
-          puts("Imagem encontrada.");
-          int bytes;
-          char buffer[BUFFER_SIZE];
+        puts("Imagem Encontrada.");
+        int bytes;
+        char buffer[BUFFER_SIZE];
+        char *mfull = (char*)malloc((strlen("HTTP/1.1 200 OK\r\nContent-Type: image/")+strlen(ext)+strlen("\r\n\r\n"))*sizeof(char));
+        mfull[0] = '\0'; // inicializando mfull com string vazia para remover lixos de malloc
+        strcat(mfull,"HTTP/1.1 200 OK\r\nContent-Type: image/");
+        strcat(mfull,ext);
+        strcat(mfull, "\r\n\r\n");
+        puts(mfull); // pequena alteração aqui para fazer com que a mensagem do server seja de acordo com a extensao. Antes estava fixo jpeg.
 
-          send(socket, "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n", 45, 0);
-  	      while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // ler o arquivo no buffer enquanto nao chega no fim
-  			  write (socket, buffer, bytes); // envia o conteudo no buffer para o socket
+        send(socket, mfull, strlen(mfull), 0);// send é um write especifico de socket, com mais opções, mas tem mesma função de write
+        while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // ler o arquivo no buffer enquanto nao chega no fim
+  			write (socket, buffer, bytes); // envia o conteudo no buffer para o socket
       } else { //  nao achou arquivo
-          puts("Imagem não encontrar no Servidor!");
-          write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
-      }
+          puts("Imagem não encontrada no Servidor! - 404 not found");
+          write(socket, "HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404: File Not Found :(</body></html>", strlen("HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404: File Not Found :(</body></html>"));
+        }
+        puts("===== Fim da resposta =====\n");
       close(fp);
       free(nfile);
-      //free(nnfile);
+      //free(nnfile); // estava dando erro aqui tbm, por isso comentado..
       //free(ponto);
 }

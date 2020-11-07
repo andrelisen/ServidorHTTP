@@ -13,11 +13,14 @@
 #include "manipulaSocketImg.h"
 #include "manipulaSocketTxt.h"
 
+#define PORT_NO 8080 // numero da porta
 
 int main(int argc, char *argv[]){
     sem_init(&mutex, 0, 1); // Inıcializa mutex com 1.
     int socket_desc, new_socket, c, *new_sock;
     struct sockaddr_in server, client;
+
+    int num_conn = 0;
 
     socket_desc = socket(AF_INET, SOCK_STREAM, 0); // cria socket - af_inet: ipv4 - sock stream: TCP - 0: IP
     if (socket_desc == -1){
@@ -25,7 +28,7 @@ int main(int argc, char *argv[]){
       return 1;
     }
 
-    server.sin_family = AF_INET; 
+    server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY; // localhost
     server.sin_port = htons(PORT_NO); // num porta processo
 
@@ -40,6 +43,8 @@ int main(int argc, char *argv[]){
     c = sizeof(struct sockaddr_in);
     while ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c))){ // aceita conexoes - salva em novo socket
       puts("Conexão aceitada! \n");
+
+      printf("Numero de conexoes:%d\n",++num_conn);
 
       pthread_t sniffer_thread; // nova thread
       new_sock = (int*) malloc(1);

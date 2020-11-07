@@ -1,1 +1,1 @@
-void text_handler(int socket, char *file_name);
+void text_handler(int socket, char *file_name, char *ext);

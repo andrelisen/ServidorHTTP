@@ -1,0 +1,89 @@
+<!--?xml version="1.0" encoding="iso-8859-1"?-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>Test page for server</title>
+
+</head>
+
+<body>
+
+<div id="main">
+<div id="content">
+
+<h1>Test page for server</h1>
+
+<p>This is a test page to see if the server is working properly.</p>
+<img src='sunflowers.jpeg' />
+<img src='tulipfield.jpeg' />
+
+<!--  Programming issues  -->
+
+<h2>About HTTP servers</h2>
+
+<p>The networking issues are actually fairly trivial. HTTP
+is essentially a text-based protocol which runs over TCP/IP (though
+it can run over any transport protocol). The essential network steps
+are:</p>
+
+<ul>
+  <li>Create a listening socket</li>
+  <li>Accept a connection with it</li>
+  <li>Fork a child process to service the connection, whilst
+    the parent process goes back to accept more connections.</li>
+  <li>Read in the HTTP request</li>
+  <li>Send the HTTP response</li>
+  <li>Send the entity requested (e.g. an HTML document)</li>
+</ul>
+
+<p>The bulk of the code involves interpreting the HTTP request
+and sending the HTTP response according to the protocol (though
+this server is by no means 100% compliant with any HTTP protocol).
+In order to effectively facilitate communication, HTTP requests
+and reponses must follow a strict convention.</p>
+
+<p>HTTP requests can be <em>simple</em> or <em>full</em>. A simple
+request contains one line only, and looks like this:</p>
+
+<p class="code"><code>GET /index.html</code></p>
+
+<p>A full request can contain more than one line, and a blank
+line <strong>must</strong> be sent at the end to signify the
+end of the request:</p>
+
+<pre>GET /index.html HTTP/1.0
+Host: www.paulgriffiths.net
+User-Agent: Lynx/2.8.1rel.2 libwww-FM/2.14
+Accept-Encoding: gzip, compress
+Accept-Language: en
+&lt;BLANK LINE&gt;</pre>
+
+<p>The number of headers following the <em>request line</em> is
+variable, which is why the blank line is needed to let the server
+know when they have all been transmitted. </p>
+
+<p>The server must decipher this request, and make an appropriate
+response. Presuming the above file exists, the HTTP response
+generated may look like:</p>
+
+<pre>HTTP/1.0 200 OK
+Server: PGWebServ v0.1
+Content-Type: text/html
+&lt;BLANK LINE&gt;</pre>
+
+<p>Again, a blank line must be sent to signify where the headers
+end.</p>
+
+<p>Following the response, the <em>entity</em> (e.g. an HTML
+document, a JPEG file) is transmitted. Once this is complete,
+the connection is terminated. With a simple HTTP request, only
+the entity is sent; no HTTP response is generated.</p>
+
+<h2>Hyperlinks</h2>
+
+<ul class="menu">
+  <li><a href="anotherpage.html">Another page</a></li>
+  <li><a href="acodissey.jpeg">Really Big image</a></li>
+</ul>
+
+</body></html>
