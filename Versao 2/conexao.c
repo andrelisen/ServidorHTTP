@@ -16,9 +16,9 @@ int thread_count = 0; //contador do numero de threads ativas ao mesmo tempo
 
 void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do cliente, manipular e administrar as threads
     int request;
-    char client_reply[BUFFER_SIZE], *request_lines[3];
+    char client_reply[BUFFER_SIZE], *request_lines[100];
     char *file_name;
-
+    char *conn_type;
     // pegar descritor do socket
     int sock = *((int *)socket_desc);
 
@@ -52,9 +52,25 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
       printf("%s", client_reply);
       request_lines[0] = strtok(client_reply, " \t\n"); // pega a primeira parte da requisicao GET
       if (strncmp(request_lines[0], "GET\0", 4) == 0){
+
         // separa as outras partes
-        request_lines[1] = strtok(NULL, " \t"); // endereco
+        request_lines[1] = strtok(NULL, " \t"); // endereço
         request_lines[2] = strtok(NULL, " \t\n"); // protocolo
+        int cont = 2;
+        while ( request_lines[cont] != NULL ){// loop para separar todo resto do request por espaços
+          cont++;
+          request_lines[cont] = strtok(NULL," \t\r\n\v"); // era para ser por linha mas não presta
+          if (request_lines[cont] == NULL)
+            break;
+        }
+
+        for (int i = 0; i < 100; i++) { // procura pela tipo de connection
+          if(strcmp(request_lines[i],"Connection:\0")==0){
+            conn_type = request_lines[i+1];
+            printf("connection: %s\n", conn_type);
+            break;
+          }
+        }
 
         if (strncmp(request_lines[2], "HTTP/1.0", 8) != 0 && strncmp(request_lines[2], "HTTP/1.1", 8) != 0){ // Bad request se n for tipo HTTP
           puts("Pedido errado.");
@@ -95,12 +111,20 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
 
     //sleep(10); // Descomentar para conseguir enxergar o limite de threads.
 
-    free(socket_desc);
-    shutdown(sock, SHUT_RDWR); // encerra conexao do socket
-    close(sock); // destroi socket
-    sock = -1;
-    sem_wait(&mutex); // pega lock para decrementar contador
-    thread_count--;
-    sem_post(&mutex);
-    pthread_exit(NULL); // sai da thread
+    if(strcmp(conn_type, "keep-alive") == 0 || strcmp(conn_type, "Keep-Alive") == 0 ){ //compara se é keep-alive;
+      // não fechar conexão!!, só sai da thread.
+      sem_wait(&mutex); // pega lock para decrementar contador
+      thread_count--;
+      sem_post(&mutex);
+      pthread_exit(NULL); // sai da thread
+    }else {
+      free(socket_desc);
+      shutdown(sock, SHUT_RDWR); // encerra conexao do socket
+      close(sock); // destroi socket
+      sock = -1;
+      sem_wait(&mutex); // pega lock para decrementar contador
+      thread_count--;
+      sem_post(&mutex);
+      pthread_exit(NULL); // sai da thread
+  }
   }
