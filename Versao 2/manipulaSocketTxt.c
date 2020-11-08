@@ -2,6 +2,7 @@
 #include <unistd.h>    // for write
 #include "servidor2.h"
 #include "manipulaSocketTxt.h"
+#include "fila.h"
 
 void text_handler(int socket, char *file_name, char *ext){ // le e escreve arquivos de texto no socket
       puts("===== Entrou text handler =====");

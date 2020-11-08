@@ -11,6 +11,7 @@
 #include "servidor2.h"
 #include "manipulaSocketImg.h"
 #include "manipulaSocketTxt.h"
+#include "fila.h"
 
 int thread_count = 0; //contador do numero de threads ativas ao mesmo tempo
 

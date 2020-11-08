@@ -12,10 +12,15 @@
 #include "servidor2.h"
 #include "manipulaSocketImg.h"
 #include "manipulaSocketTxt.h"
+#include "fila.h"
 
 #define PORT_NO 8080 // numero da porta
 
+int idSocketClienteTmp = 0;
+
 int main(int argc, char *argv[]){
+
+    node *filaCliente = (node *) malloc(sizeof(node));
     sem_init(&mutex, 0, 1); // Inıcializa mutex com 1.
     int socket_desc, new_socket, c, *new_sock;
     struct sockaddr_in server, client;
@@ -41,15 +46,25 @@ int main(int argc, char *argv[]){
     puts("Esperando por uma conexão...");
 
     c = sizeof(struct sockaddr_in);
-    while ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c))){ // aceita conexoes - salva em novo socket
-      puts("Conexão aceitada! \n");
+    
+   
+    if(vazia(filaCliente) == 1 || validaExistencia(filaCliente, idSocketClienteTmp) == 0){ //não tem nenhum elemento ou não existe esse elemento na fila
+      printf("Não existe nenhum elemento na fila, logo new socket!");
+    }else{
+      printf("Existe este socket na fila, captura ele!");
+      struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
+    }
 
-      printf("Numero de conexoes:%d\n",++num_conn);
+    while ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c))){ // aceita conexoes - salva em novo socket
+      puts("Conexão aceita! \n");
+      printf("Numero do contador do while=%i\n", idSocketClienteTmp);
+      idSocketClienteTmp++;
+      printf("Número de conexões:%d\n",++num_conn);
 
       pthread_t sniffer_thread; // nova thread
       new_sock = (int*) malloc(1);
       *new_sock = new_socket;
-
+      
       if (pthread_create(&sniffer_thread, NULL, connection_handler, (void *)new_sock) < 0){ // cria uma thread para cada requisicao, passando socket novo
         puts("Não foi possível criar a thread!");
         return 1;
