@@ -28,6 +28,7 @@ int main(int argc, char *argv[]){
     int num_conn = 0;
 
     socket_desc = socket(AF_INET, SOCK_STREAM, 0); // cria socket - af_inet: ipv4 - sock stream: TCP - 0: IP
+    
     if (socket_desc == -1){
       puts("Não foi possível criar o socket");
       return 1;
@@ -46,19 +47,33 @@ int main(int argc, char *argv[]){
     puts("Esperando por uma conexão...");
 
     c = sizeof(struct sockaddr_in);
-    
-   
-    if(vazia(filaCliente) == 1 || validaExistencia(filaCliente, idSocketClienteTmp) == 0){ //não tem nenhum elemento ou não existe esse elemento na fila
-      printf("Não existe nenhum elemento na fila, logo new socket!");
-    }else{
-      printf("Existe este socket na fila, captura ele!");
-      struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
-    }
+       
+    while (1){ // aceita conexoes - salva em novo socket
 
-    while ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c))){ // aceita conexoes - salva em novo socket
+      //verifica se existe esse cliente na fila
+       if(vazia(filaCliente) == 1 || validaExistencia(filaCliente, idSocketClienteTmp) == 0){ //não tem nenhum elemento ou não existe esse elemento na fila
+        printf("Não existe nenhum elemento na fila, logo new socket!");
+        // insere(filaCliente, idSocketClienteTmp, (struct sockaddr *)&client);
+        // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
+        // new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c); 
+        // idSocketClienteTmp++;
+
+      }else{
+        printf("Existe este socket na fila, captura ele!");
+        //procurar na fila
+        // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
+        // new_socket = accept(socket_desc, socketClienteTmp, (socklen_t *)&c); //socketClienteTmp
+      }
+      new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c);
+      printf("---\n");
+      printf("\n Valor do ip do cliente=%i \n", client.sin_addr.s_addr);
+      printf("---\n");
+      printf("Descritor é:%i", socket_desc);
+      printf("\nValor do new_socket=%i\n", new_socket);
+      printf("\n#####\n");
+
       puts("Conexão aceita! \n");
-      printf("Numero do contador do while=%i\n", idSocketClienteTmp);
-      idSocketClienteTmp++;
+      
       printf("Número de conexões:%d\n",++num_conn);
 
       pthread_t sniffer_thread; // nova thread
@@ -67,7 +82,7 @@ int main(int argc, char *argv[]){
       
       if (pthread_create(&sniffer_thread, NULL, connection_handler, (void *)new_sock) < 0){ // cria uma thread para cada requisicao, passando socket novo
         puts("Não foi possível criar a thread!");
-        return 1;
+        break;
       }
     }
     return 0;

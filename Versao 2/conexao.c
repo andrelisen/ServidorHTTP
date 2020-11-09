@@ -22,7 +22,6 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
     char *conn_type;
     // pegar descritor do socket
     int sock = *((int *)socket_desc);
-
     // recupera o request do cliente
     request = recv(sock, client_reply, BUFFER_SIZE, 0);
 

@@ -11,5 +11,4 @@ clear:
 		rm manipulaSocketImg.o
 		rm manipulaSocketTxt.o
 		rm fila.o
-		rm servidor2.o
 		rm servidor
