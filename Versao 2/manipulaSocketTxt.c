@@ -5,8 +5,9 @@
 #include "fila.h"
 
 void text_handler(int socket, char *file_name, char *ext){ // le e escreve arquivos de texto no socket
-      puts("===== Entrou text handler =====");
-
+      printf("\n");
+      puts("===== Entrou no text handler =====");
+  
       char *buffer, *nfile, *nnfile, *tok;
       int flg = 0;
       nfile = (char*)malloc((strlen(file_name)-1)*sizeof(char)); //alocando mem para nfile tamanho -1 para remover /

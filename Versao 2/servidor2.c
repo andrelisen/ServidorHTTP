@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
 
     node *filaCliente = (node *) malloc(sizeof(node));
     sem_init(&mutex, 0, 1); // Inıcializa mutex com 1.
-    int socket_desc, new_socket, c, *new_sock;
+    int socket_desc, new_socket, c, *new_sock, new_thread;
     struct sockaddr_in server, client;
 
     int num_conn = 0;
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY; // localhost
-    server.sin_port = htons(PORT_NO); // num porta processo
+    server.sin_port = htons(PORT_NO); // número de porta processo
 
     if (bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0) { // vincula socket ao end e num porta especificados acima
       puts("Vinculação de um socket a um endereço falhou!");
@@ -48,42 +48,47 @@ int main(int argc, char *argv[]){
 
     c = sizeof(struct sockaddr_in);
        
-    while (1){ // aceita conexoes - salva em novo socket
+    for (;;){ // aceita conexoes - salva em novo socket
 
       //verifica se existe esse cliente na fila
        if(vazia(filaCliente) == 1 || validaExistencia(filaCliente, idSocketClienteTmp) == 0){ //não tem nenhum elemento ou não existe esse elemento na fila
-        printf("Não existe nenhum elemento na fila, logo new socket!");
+        printf("Não existe nenhum elemento na fila, logo new socket!\n");
         // insere(filaCliente, idSocketClienteTmp, (struct sockaddr *)&client);
         // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
         // new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c); 
         // idSocketClienteTmp++;
 
       }else{
-        printf("Existe este socket na fila, captura ele!");
+        printf("Existe este socket na fila, captura ele!\n");
         //procurar na fila
         // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
         // new_socket = accept(socket_desc, socketClienteTmp, (socklen_t *)&c); //socketClienteTmp
       }
-      new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c);
-      printf("---\n");
-      printf("\n Valor do ip do cliente=%i \n", client.sin_addr.s_addr);
-      printf("---\n");
-      printf("Descritor é:%i", socket_desc);
-      printf("\nValor do new_socket=%i\n", new_socket);
-      printf("\n#####\n");
 
+      new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c);
+
+      printf("\n#####\n");
       puts("Conexão aceita! \n");
-      
       printf("Número de conexões:%d\n",++num_conn);
+      printf("Valor do ip do cliente=%i \n", client.sin_addr.s_addr);
+      printf("Valor do número da porta do socket=%i \n", client.sin_port);
+      printf("Descritor é:%i\n", socket_desc);
+      printf("Valor do new_socket=%i\n", new_socket);
+      printf("\n#####\n");    
 
       pthread_t sniffer_thread; // nova thread
       new_sock = (int*) malloc(1);
       *new_sock = new_socket;
-      
-      if (pthread_create(&sniffer_thread, NULL, connection_handler, (void *)new_sock) < 0){ // cria uma thread para cada requisicao, passando socket novo
+      new_thread = pthread_create(&sniffer_thread, NULL, connection_handler, (void *)new_sock);
+  
+      if(new_thread < 0){ // cria uma thread para cada requisicao, passando socket novo
         puts("Não foi possível criar a thread!");
         break;
+      }else{
+        puts("Criou a thread para o socket!");
+        printf("\n");
       }
+
     }
     return 0;
   }
