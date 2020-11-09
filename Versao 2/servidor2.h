@@ -13,7 +13,7 @@
 
 
 #define PORT_NO 8080 // numero da porta
-#define BUFFER_SIZE 1024 // tamanho buffer do socket
+#define BUFFER_SIZE 8192 // tamanho buffer do socket
 #define CONNECTION_NUMBER 20 // quantidade maxima de threads simultaneas
 
 #define EOL "\r\n" // end of line
