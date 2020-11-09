@@ -23,7 +23,9 @@
 
 //importante: ao tentar acessar imagens em outra pasta, ele esta dando erro de corrupted_size vs prev_size. Tem a ver com sobreescrita de tamanhos..
 // possivelmente problema com alocação da memória? Acontece quando html chama as imagens.
-  void image_handler(int socket, char *file_name){ // le e escreve arquivos de imagem no socket
+  void image_handler(int socket, char *file_name, char *ext){ // le e escreve arquivos de imagem no socket
+      puts("===== Entered image handler =====");
+
       char *tok, *nnfile, *ponto;
       char *nfile = (char*)malloc((strlen(file_name)-1)*sizeof(char)); // aloca espaço para nfile, com tamanho -1 de filename
       int fp;
@@ -55,22 +57,30 @@
           puts("Image Found.");
           int bytes;
           char buffer[BUFFER_SIZE];
+          char *mfull = (char*)malloc((strlen("HTTP/1.1 200 OK\r\nContent-Type: image/")+strlen(ext)+strlen("\r\n\r\n"))*sizeof(char));
+          mfull[0] = '\0'; // inicializando mfull com string vazia para remover lixos de malloc
+          strcat(mfull,"HTTP/1.1 200 OK\r\nContent-Type: image/");
+          strcat(mfull,ext);
+          strcat(mfull, "\r\n\r\n");
+          puts(mfull); // pequena alteração aqui para fazer com que a mensagem do server seja de acordo com a extensao. Antes estava fixo jpeg.
 
-          send(socket, "HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\n\r\n", 45, 0);
+          send(socket, mfull, strlen(mfull), 0);// send é um write especifico de socket, com mais opções, mas tem mesma função de write
   	      while ( (bytes=read(fp, buffer, BUFFER_SIZE))>0 ) // ler o arquivo no buffer enquanto nao chega no fim
   			  write (socket, buffer, bytes); // envia o conteudo no buffer para o socket
       } else { //  nao achou arquivo
-          puts("Image not found in the server!");
-          write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+          puts("Image not found in the server! - 404 Not found");
+          write(socket, "HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404: File Not Found :(</body></html>", strlen("HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404: File Not Found :(</body></html>"));
       }
+      puts("===== Response End =====\n");
       close(fp);
       free(nfile);
       //free(nnfile);
       //free(ponto);
   }
 
-  void text_handler(int socket, char *file_name) // le e escreve arquivos de texto no socket
-  {
+  void text_handler(int socket, char *file_name, char *ext){ // le e escreve arquivos de texto no socket
+      puts("===== Entered text handler =====");
+
       char *buffer, *nfile, *nnfile, *tok;
       int flg = 0;
       nfile = (char*)malloc((strlen(file_name)-1)*sizeof(char)); //alocando mem para nfile tamanho -1 para remover /
@@ -106,7 +116,14 @@
           long bytes_read = ftell(fp);
           fseek(fp, 0, SEEK_SET);
 
-          send(socket, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n", 44, 0); // Envia cabeçalho de resposta bem sucedida
+          char *mfull = (char*)malloc((strlen("HTTP/1.1 200 OK\r\nContent-Type: text/")+strlen(ext)+strlen("\r\n\r\n"))*sizeof(char));
+          mfull[0] = '\0'; // inicializando mfull com string vazia para remover lixos de malloc
+          strcat(mfull,"HTTP/1.1 200 OK\r\nContent-Type: text/");
+          strcat(mfull,ext);
+          strcat(mfull, "\r\n\r\n");
+          puts(mfull); // pequena alteração aqui para fazer com que a mensagem do server seja de acordo com a extensao. Antes estava fixo jpeg.
+
+          send(socket, mfull, strlen(mfull), 0); // Envia cabeçalho de resposta bem sucedida
           buffer = (char *)malloc(bytes_read * sizeof(char)); // aloca buffer com tamanho do arquivo
 
           fread(buffer, bytes_read, 1, fp); //  ler o arquivo texto no buffer
@@ -116,8 +133,9 @@
           fclose(fp);
       } else { // não achou arquivo
           puts("File not found in the server!");
-          write(socket, "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>", strlen("HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404 File Not Found</body></html>"));
+          write(socket, "HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404: File Not Found :(</body></html>", strlen("HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>404: File Not Found :(</body></html>"));
       }
+      puts("===== Response End =====\n");
       free(nfile);
       free(nnfile);
       free(ponto);
@@ -140,8 +158,9 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
     thread_count++; // incrementa qtd de threads
 
     if(thread_count > CONNECTION_NUMBER){ // testa que quantidade atual de threads nao excede limite. Se excede, manda mensagem de ocupado.
-      puts("Connection refused. Thread limit exceeded");
-      char *message = "HTTP/1.0 400 Bad Request\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>System is busy right now.</body></html>";
+      puts("====== Connection refused. Thread limit exceeded ======");
+      puts("HTTP/1.1 503 Service Unavailable");
+      char *message = "HTTP/1.1 503 Service Unavailable\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>System is busy right now.</body></html>";
       write(sock, message, strlen(message)); //manda para cliente mensagem de ocupado
       thread_count--; // decrementa num threads
       sem_post(&mutex); // release semaphore
@@ -158,7 +177,7 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
     } else if (request == 0){ // socket fechado, cliente desconectou.
       puts("Client disconnected upexpectedly.");
     } else { // mensagem recebida
-      puts ("Message received:");
+      puts ("====== Message received:");
       printf("%s", client_reply);
       request_lines[0] = strtok(client_reply, " \t\n"); // pega a primeira parte da requisicao GET
       if (strncmp(request_lines[0], "GET\0", 4) == 0){
@@ -168,12 +187,13 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
 
         if (strncmp(request_lines[2], "HTTP/1.0", 8) != 0 && strncmp(request_lines[2], "HTTP/1.1", 8) != 0){ // Bad request se n for tipo HTTP
           puts("Wrong request.");
-          char *message = "HTTP/1.0 400 Bad Request\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>400 Bad Request</body></html>";
+          char *message = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>400 Bad Request</body></html>";
           write(sock, message, strlen(message));
         } else  {
             char *tokens[2]; // para dividir em nome do arquivo e extensao
 
             file_name = (char *)malloc(strlen(request_lines[1]) * sizeof(char));
+            file_name[0] = '\0';
             strcpy(file_name, request_lines[1]);
             puts(file_name);
 
@@ -183,18 +203,18 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
 
             if (tokens[0] == NULL || tokens[1] == NULL) { // se nao tem extensao ou request direto para localhost:PORT_NO
               puts("Wrong request");
-              char *message = "HTTP/1.0 400 Bad Request\r\nConnection: close\r\n\r\n<!doctype html><html><body>400 Bad Request. (You need to request to image and text files)</body></html>";
+              char *message = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n<!doctype html><html><body>400 Bad Request. (You need to request to image and text files)</body></html>";
               write(sock, message, strlen(message));
             } else if (strcmp(tokens[1], "html") == 0 || strcmp(tokens[1], "htm") == 0 || strcmp(tokens[1], "css") == 0 || strcmp(tokens[1], "js") == 0 || strcmp(tokens[1], "txt") == 0 ){
               sem_wait(&mutex); // Evita que duas ou mais threads façam operacoes de IO ao mesmo tempo - lock semaphore
-              text_handler(sock, request_lines[1]); // chama func de ler arquivos texto
+              text_handler(sock, request_lines[1], tokens[1]); // chama func de ler arquivos texto
               sem_post(&mutex); // release semaphore
             } else if (strcmp(tokens[1], "jpeg") == 0 || strcmp(tokens[1], "jpg") == 0 || strcmp(tokens[1], "png") == 0 || strcmp(tokens[1], "bmp") == 0 || strcmp(tokens[1], "gif") == 0 || strcmp(tokens[1], "webp") == 0|| strcmp(tokens[1], "ico") == 0 ){
               sem_wait(&mutex); // lock semaphore -- deve-se estudar aqui. Sera porque n pode ter mais de uma thread tentando escrever no socket ao mesmo tempo?
-              image_handler(sock, request_lines[1]); // chama func de ler arquivos de imagem (binarios?) -- existe apenas um semaforo, o q significa que só uma thread pode entrar nesses caminhos por vez, independente do cliente?
+              image_handler(sock, request_lines[1], tokens[1]); // chama func de ler arquivos de imagem (binarios?) -- existe apenas um semaforo, o q significa que só uma thread pode entrar nesses caminhos por vez, independente do cliente?
               sem_post(&mutex); // release semaphore
             } else { // extensao que nao pertence as de acima.
-              char *message = "HTTP/1.0 400 Bad Request\r\nConnection: close\r\n\r\n<!doctype html><html><body>400 Bad Request. Not Supported File Type (Suppoerted File Types: html and jpeg)</body></html>";
+              char *message = "HTTP/1.1 415 Unsupported Media Type\r\nConnection: close\r\n\r\n<!doctype html><html><body>415 Unsupported Media Type.</body></html>";
               write(sock, message, strlen(message));
             }
           free(file_name);
@@ -220,6 +240,8 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
     int socket_desc, new_socket, c, *new_sock;
     struct sockaddr_in server, client;
 
+    int num_conn = 0;
+
     socket_desc = socket(AF_INET, SOCK_STREAM, 0); // cria socket - af_inet: ipv4 - sock stream: TCP - 0: IP
     if (socket_desc == -1){
       puts("Could not create socket");
@@ -241,6 +263,8 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
     c = sizeof(struct sockaddr_in);
     while ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c))){ // aceita conexoes - salva em novo socket
       puts("Connection accepted \n");
+
+      printf("Numero de conexoes:%d\n",++num_conn);
 
       pthread_t sniffer_thread; // nova thread
       new_sock = (int*) malloc(1);
