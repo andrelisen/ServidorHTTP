@@ -49,22 +49,22 @@ int main(int argc, char *argv[]){
     c = sizeof(struct sockaddr_in);
        
     for (;;){ // aceita conexoes - salva em novo socket
-
+      
       //verifica se existe esse cliente na fila
-       if(vazia(filaCliente) == 1 || validaExistencia(filaCliente, idSocketClienteTmp) == 0){ //não tem nenhum elemento ou não existe esse elemento na fila
-        printf("Não existe nenhum elemento na fila, logo new socket!\n");
-        // insere(filaCliente, idSocketClienteTmp, (struct sockaddr *)&client);
-        // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
-        // new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c); 
-        // idSocketClienteTmp++;
+      //  if(vazia(filaCliente) == 1 || validaExistencia(filaCliente, idSocketClienteTmp) == 0){ //não tem nenhum elemento ou não existe esse elemento na fila
+      //   printf("Não existe nenhum elemento na fila, logo new socket!\n");
+      //   // insere(filaCliente, idSocketClienteTmp, (struct sockaddr *)&client);
+      //   // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
+      //   // new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c); 
+      //   // idSocketClienteTmp++;
 
-      }else{
-        printf("Existe este socket na fila, captura ele!\n");
-        //procurar na fila
-        // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
-        // new_socket = accept(socket_desc, socketClienteTmp, (socklen_t *)&c); //socketClienteTmp
-      }
-
+      // }else{
+      //   printf("Existe este socket na fila, captura ele!\n");
+      //   //procurar na fila
+      //   // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
+      //   // new_socket = accept(socket_desc, socketClienteTmp, (socklen_t *)&c); //socketClienteTmp
+      // }
+      
       new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c);
 
       printf("\n#####\n");
@@ -78,17 +78,19 @@ int main(int argc, char *argv[]){
 
       pthread_t sniffer_thread; // nova thread
       new_sock = (int*) malloc(1);
-      *new_sock = new_socket;
+      *new_sock = new_socket; //id da thread
+
+      // cria uma thread para cada requisicao, passando socket novo
       new_thread = pthread_create(&sniffer_thread, NULL, connection_handler, (void *)new_sock);
-  
-      if(new_thread < 0){ // cria uma thread para cada requisicao, passando socket novo
+      
+      if(new_thread < 0){ 
         puts("Não foi possível criar a thread!");
         break;
       }else{
         puts("Criou a thread para o socket!");
         printf("\n");
       }
-
+      
     }
     return 0;
   }

@@ -27,7 +27,7 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
     request = recv(sock, client_reply, BUFFER_SIZE, 0);
 
     sem_wait(&mutex); // lock semaphore
-    printf("Thread %d: Entrando..\n", sock); 
+    
     thread_count++; // incrementa qtd de threads
 
     // testa que quantidade atual de threads nao excede limite. Se excede, manda mensagem de ocupado.
