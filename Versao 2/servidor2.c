@@ -6,6 +6,8 @@
 #include <pthread.h>   // for threading, link with lpthread
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/select.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <semaphore.h>
 #include "conexao.h"
@@ -20,16 +22,23 @@ int idSocketClienteTmp = 0;
 
 int main(int argc, char *argv[]){
 
+  fd_set testset;
+
     node *filaCliente = (node *) malloc(sizeof(node));
     sem_init(&mutex, 0, 1); // Inıcializa mutex com 1.
-    int socket_desc, new_socket, c, *new_sock, new_thread;
+    int server_sock, new_socket, c, *new_sock, new_thread;
     struct sockaddr_in server, client;
+
+    int clients[20];
+    for(int m = 0; m < 30; m++){
+      clients[m] = -1;
+    }
 
     int num_conn = 0;
 
-    socket_desc = socket(AF_INET, SOCK_STREAM, 0); // cria socket - af_inet: ipv4 - sock stream: TCP - 0: IP
-    
-    if (socket_desc == -1){
+    server_sock = socket(AF_INET, SOCK_STREAM, 0); // cria socket - af_inet: ipv4 - sock stream: TCP - 0: IP
+
+    if (server_sock == -1){
       puts("Não foi possível criar o socket");
       return 1;
     }
@@ -38,24 +47,74 @@ int main(int argc, char *argv[]){
     server.sin_addr.s_addr = INADDR_ANY; // localhost
     server.sin_port = htons(PORT_NO); // número de porta processo
 
-    if (bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0) { // vincula socket ao end e num porta especificados acima
+    if (bind(server_sock, (struct sockaddr *)&server, sizeof(server)) < 0) { // vincula socket ao end e num porta especificados acima
       puts("Vinculação de um socket a um endereço falhou!");
       return 1;
     }
 
-    listen(socket_desc, 20); // inicia escuta por clientes - limite de 20 na fila
+    listen(server_sock, 20); // inicia escuta por clientes - limite de 20 na fila
     puts("Esperando por uma conexão...");
 
     c = sizeof(struct sockaddr_in);
-       
-    for (;;){ // aceita conexoes - salva em novo socket
-      
+
+    int sd, max_sd, actv;
+    pthread_t threads[20];
+
+    for (;;){
+
+      FD_ZERO(&testset); // limpa conjunto
+      FD_SET(server_sock,&testset); //add socket listen server ao conjunto
+      for(int n = 0; n < 20; n++){
+        sd = clients[n];
+        if(sd > 0)
+          FD_SET(sd,&testset);
+        if(sd > max_sd)
+          max_sd = sd;
+      }
+      actv = select(max_sd+1,&testset, NULL, NULL, NULL);
+      if ((actv < 0) && (errno!=EINTR))
+        puts("select error");
+
+      if(FD_ISSET(server_sock,&testset)){
+        if((new_socket = accept(server_sock, (struct sockaddr *)&client, (socklen_t *)&c)) == -1){
+          perror("Error no accept\n");
+          exit(EXIT_FAILURE);
+        }else
+          puts("Accept executado");
+
+        printf("\n#####\n");
+        puts("Conexão aceita! \n");
+        printf("Número de conexões:%d\n",++num_conn);
+        printf("Valor do ip do cliente=%i \n", client.sin_addr.s_addr);
+        printf("Valor do número da porta do socket=%i \n", client.sin_port);
+        printf("Valor do new_socket=%i\n", new_socket);
+        printf("#####\n");
+
+        for(int l = 0; l < 20;l++){
+          if(clients[l] == -1){
+              clients[l] = new_socket;
+              new_sock = (int*) malloc(1);
+              *new_sock = clients[l]; //id da thread
+              new_thread = pthread_create(&threads[l], NULL, connection_handler, (void *)new_sock);
+              if(new_thread < 0){
+                puts("Não foi possível criar a thread!");
+                break;
+              }else{
+                puts("Criou a thread para o socket!");
+                printf("\n");
+              }
+              break;
+          }
+
+        }
+      }
+
       //verifica se existe esse cliente na fila
       //  if(vazia(filaCliente) == 1 || validaExistencia(filaCliente, idSocketClienteTmp) == 0){ //não tem nenhum elemento ou não existe esse elemento na fila
       //   printf("Não existe nenhum elemento na fila, logo new socket!\n");
       //   // insere(filaCliente, idSocketClienteTmp, (struct sockaddr *)&client);
       //   // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
-      //   // new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c); 
+      //   // new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c);
       //   // idSocketClienteTmp++;
 
       // }else{
@@ -64,33 +123,25 @@ int main(int argc, char *argv[]){
       //   // struct sockaddr_in *socketClienteTmp = existeFila(filaCliente, idSocketClienteTmp);
       //   // new_socket = accept(socket_desc, socketClienteTmp, (socklen_t *)&c); //socketClienteTmp
       // }
-      
-      new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c);
 
-      printf("\n#####\n");
-      puts("Conexão aceita! \n");
-      printf("Número de conexões:%d\n",++num_conn);
-      printf("Valor do ip do cliente=%i \n", client.sin_addr.s_addr);
-      printf("Valor do número da porta do socket=%i \n", client.sin_port);
-      printf("Descritor é:%i\n", socket_desc);
-      printf("Valor do new_socket=%i\n", new_socket);
-      printf("\n#####\n");    
 
-      pthread_t sniffer_thread; // nova thread
-      new_sock = (int*) malloc(1);
-      *new_sock = new_socket; //id da thread
 
-      // cria uma thread para cada requisicao, passando socket novo
-      new_thread = pthread_create(&sniffer_thread, NULL, connection_handler, (void *)new_sock);
-      
-      if(new_thread < 0){ 
-        puts("Não foi possível criar a thread!");
-        break;
-      }else{
-        puts("Criou a thread para o socket!");
-        printf("\n");
-      }
-      
+
+      // pthread_t sniffer_thread; // nova thread
+      // new_sock = (int*) malloc(1);
+      // *new_sock = new_socket; //id da thread
+      //
+      // // cria uma thread para cada requisicao, passando socket novo
+      // new_thread = pthread_create(&sniffer_thread, NULL, connection_handler, (void *)new_sock);
+      //
+      // if(new_thread < 0){
+      //   puts("Não foi possível criar a thread!");
+      //   break;
+      // }else{
+      //   puts("Criou a thread para o socket!");
+      //   printf("\n");
+      // }
+
     }
     return 0;
   }
