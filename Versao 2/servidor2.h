@@ -20,6 +20,7 @@
 #define EOL_SIZE 2
 
 sem_t mutex; // para controlar o contador de threads
+int clients[20];
 
 void image_handler(int socket, char *file_name, char *ext);
 void text_handler(int socket, char *file_name, char *ext);
