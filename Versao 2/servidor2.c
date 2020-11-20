@@ -45,7 +45,7 @@ int main(int argc, char *argv[]){
 
   server.sin_family = AF_INET;
   server.sin_addr.s_addr = INADDR_ANY; // localhost
-  server.sin_port = htons(PORT_NO); // número de porta processo
+  server.sin_port = htons(PORT_NO); // número de porta processoa
 
   if (bind(server_sock, (struct sockaddr *)&server, sizeof(server)) < 0) { // vincula socket ao end e num porta especificados acima
     puts("Vinculação de um socket a um endereço falhou!");
@@ -62,14 +62,14 @@ int main(int argc, char *argv[]){
 
   for (;;){ // aceita conexoes - salva em novo socket
 
-      new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c);
+      new_socket = accept(server_sock, (struct sockaddr *)&client, (socklen_t *)&c);
 
       printf("\n#####\n");
       puts("Conexão aceita! \n");
       printf("Número de conexões:%d\n",++num_conn);
       printf("Valor do ip do cliente=%i \n", client.sin_addr.s_addr);
       printf("Valor do número da porta do socket=%i \n", client.sin_port);
-      printf("Descritor é:%i\n", socket_desc);
+      printf("Descritor é:%i\n", server_sock);
       printf("Valor do new_socket=%i\n", new_socket);
       printf("\n#####\n");
 

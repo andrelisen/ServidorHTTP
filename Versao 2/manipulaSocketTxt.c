@@ -36,7 +36,7 @@ void text_handler(int socket, char *file_name, char *ext){ // le e escreve arqui
       else
         fp = fopen(ponto, "r");
 
-      if (fp != NULL){ // encontrou arquivo
+      if (fp != NULL){ // encontrou arquivoa
           puts("Arquivo encontrado.");
 
           fseek(fp, 0, SEEK_END); // procura tamanho do arquivo
