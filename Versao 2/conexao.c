@@ -15,7 +15,6 @@
 #include "fila.h"
 
 int thread_count = 0; //contador do numero de threads ativas ao mesmo tempo
-
 void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do cliente, manipular e administrar as threads
     printf("+++++++++++++++ENTROU NO CONNECTION HANDLER+++++++++++++++\n");
     int request;
@@ -27,16 +26,30 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
     int io_op = 0; // identifica se ocorreu operacao de IO dentro do loop
 
     while(1){
-      if((request = recv(sock, client_reply, BUFFER_SIZE, 0)) > BUFFER_SIZE){
-        //conexao desconectou
-        puts("Encerrando conexão");
-        shutdown(sock, SHUT_RDWR); // encerra conexao do socket
-        close(sock); // destroi socket
-        clients[sock] = -1;
-        pthread_exit(NULL); // sai da thread
-        break;
-      } else { // mensagem recebida
-        io_op = 1;
+      request = recv(sock, client_reply, BUFFER_SIZE, 0);
+
+      if(request == 0){
+        //nada no socket, esperar os 10s?
+        clock_t start = clock(); // inicia tempo
+        while(clock() < start + 10000){ //conta 10 segundos
+          //cuida se tem conexão
+          if((request = recv(sock, client_reply, BUFFER_SIZE, 0))>0) // se algo no socket, sai do contador
+            break;
+        }
+        clock_t end = clock();
+
+        if (((end - start)/ CLOCKS_PER_SEC) > 10 && request == 0){
+          // se o tempo foi maior q 10 segundos e io continua 0
+          //entao encerra conexao
+          puts("Encerrando conexão");
+          shutdown(sock, SHUT_RDWR); // encerra conexao do socket
+          close(sock); // destroi socket
+          clients[sock] = -1;
+          pthread_exit(NULL); // sai da thread
+          break; // sai do loop
+        }
+      }
+      if(request > 0) { // mensagem recebida
         printf("\n");
         puts ("====== Mensagem recebida:");
         printf("%s", client_reply);
@@ -111,27 +124,6 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
             free(file_name);
           }
         }
-        io_op = 0;
-
-      } if(io_op == 0){ // se io_op é 0 e ja executou tudo acima
-          clock_t start = clock(); // inicia tempo
-          printf("start %ld\n", start );
-          while(clock() < start + 10000){ //conta 10 segundos
-            if(io_op) // se io_op muda, sai do contador
-              break;
-          }
-          clock_t end = clock();
-            printf("end %ld\n", end );
-          if (((end - start)/ CLOCKS_PER_SEC) > 10 && io_op == 0){
-            // se o tempo foi maior q 10 segundos e io continua 0
-            //entao encerra conexao
-            puts("Encerrando conexão");
-            shutdown(sock, SHUT_RDWR); // encerra conexao do socket
-            close(sock); // destroi socket
-            clients[sock] = -1;
-            pthread_exit(NULL); // sai da thread
-            break; // sai do loop
-          }
       }
     }
   }
