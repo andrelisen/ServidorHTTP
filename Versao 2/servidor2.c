@@ -116,7 +116,7 @@ int main(int argc, char *argv[]){
   }
 
   for (int i = 0; i < MAX_CON; i++){
-    puts("Dentro do for para clientes");
+  //  puts("Dentro do for para clientes");
   //  printf("no for loop\n");
       if (FD_ISSET(clients[i]->num_socket, &testset)){
         puts("Atividade nova em um socket ativo");
@@ -140,7 +140,6 @@ int main(int argc, char *argv[]){
             pthread_t tid; // nova thread
             pthread_create(&tid,NULL,connection_handler,(void *)clients[i]);
           }
-
       }
   }
 }
@@ -156,23 +155,23 @@ void *timer(void * arg){
   clock_t start = clock(); // inicia tempo
   printf("\\----\\\n");
   printf("Tempo inicial = %ld\n", start);
-  while((clock() - start) < 10000){ //conta 10 segundos
-    printf("Estou dentro do while do tempo\n");
-    printf("Valor do start = %ld\n", start);
-    printf("Valor do clock = %ld\n", clock());
+  while(((clock() - start)/CLOCKS_PER_SEC) < 5){ //conta 5 segundos
+  //  printf("Estou dentro do while do tempo\n");
+  //  printf("Valor do start = %ld\n", start);
+  //  printf("Valor do clock = %ld\n", clock());
     if(FD_ISSET(clients[tdata->n_s]->num_socket, &testset)){ // le o socket de novo, se chegou algo no socket, sai do contador
       printf("Teve uma nova requisição para este socket, abortando contagem\n");
       x = 1;
-      break; //sai do while da contagem dos 10s
+      break; //sai do while da contagem dos 5s
     }
   }
   if (x == 0){
     clock_t end = clock();
-    long tempo_contador = end - start;
+    long tempo_contador = (end - start)/CLOCKS_PER_SEC;
     printf("O valor do contador final é: %ld\n", tempo_contador);
 
-    if (tempo_contador >= 10000){
-      printf("Dentro if temp > 10s\n");
+    if (tempo_contador >= 5){
+      printf("Dentro if temp > 5s\n");
       puts("Encerrando conexão");
       shutdown(clients[tdata->n_s]->num_socket, SHUT_RDWR); // encerra conexao do socket
       close(clients[tdata->n_s]->num_socket); // destroi socket

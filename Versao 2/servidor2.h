@@ -31,11 +31,12 @@ struct thread_data{
   int res;
 };
 
-sem_t mutex; // para controlar o contador de threads
+sem_t mutex, mutex2; // para controlar o contador de threads
 
 void image_handler(int socket, char *file_name, char *ext);
 void text_handler(int socket, char *file_name, char *ext);
 
 void *timer(void* arg);
+void *thread_client(void* arg);
 
 int main(int argc, char *argv[]);
