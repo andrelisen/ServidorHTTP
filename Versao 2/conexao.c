@@ -14,53 +14,45 @@
 #include "manipulaSocketTxt.h"
 #include "fila.h"
 
+int request = 0;
+int flag = 0;
 int thread_count = 0; //contador do numero de threads ativas ao mesmo tempo
-void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do cliente, manipular e administrar as threads
+struct cliente *cli;
+char client_reply[BUFFER_SIZE];
+char *request_lines[100];
+char *file_name;
+char *conn_type;
+
+void *connection_handler(void *cliente) { //aqui vai receber a mensagem do cliente, manipular e administrar as threads
     printf("+++++++++++++++ENTROU NO CONNECTION HANDLER+++++++++++++++\n");
-    int request;
-    char client_reply[BUFFER_SIZE], *request_lines[100];
-    char *file_name;
-    char *conn_type;
+
     // pegar descritor do socket
-    int sock = *((int *)socket_desc);
+    cli = (struct cliente *)cliente;
     //int io_op = 0; // identifica se ocorreu operacao de IO dentro do loop
-    int flag = 0;
+    int cont = 0;
+    pthread_t new_thread;
 
-    while(1){
-      request = recv(sock, client_reply, BUFFER_SIZE, 0); //lendo o socket
+      request = recv(cli->num_socket, client_reply, BUFFER_SIZE, 0); //lendo o socket
       printf("Leu o socket e retornou o valor de request=%d\n", request);
-      if(request == 0){ //não tenho nada no socket, logo espero 10s para ver se vai aparecer alguém
-        clock_t start = clock(); // inicia tempo
-        printf("\\----\\\n");
-        printf("VALOR DO START INICIAL É IGUAL A = %ld\n", start);
-        while(clock() < (start + 10000)){ //conta 10 segundos
-          //cuida se tem conexão
-          // printf("Valor do request3 = %d\n", request);
-          printf("Estou dentro do while no request3 do tempo\n");
-          printf("Valor do start = %ld\n", start);
-          printf("Valor do clock = %ld\n", clock());
-          if((recv(sock, client_reply, BUFFER_SIZE, 0))>0){ // le o socket de novo, se chegou algo no socket, sai do contador
-            printf("Teve uma nova requisição para este socket\n");
-            flag = 1;
-            break; //sai do while da contagem dos 10s
-          }
-       }
-       clock_t end = clock();
-       long int tempo_contador = end - start;
-       printf("O valor do contador final é: %ld\n", tempo_contador);
 
-       if ((tempo_contador/CLOCKS_PER_SEC) >= 10){
-         // se o tempo foi maior q 10 segundos e io continua 0
-         //entao encerra conexao
-         puts("Encerrando conexão");
-         shutdown(sock, SHUT_RDWR); // encerra conexao do socket
-         close(sock); // destroi socket
-         clients[sock] = -1;
-         pthread_exit(NULL); // sai da thread
+      if (request == -1){
+        perror("Erro no request");
+        puts("Encerrando conexão");
+        shutdown(cli->num_socket, SHUT_RDWR); // encerra conexao do socket
+        close(cli->num_socket); // destroi socket
+        cli->num_socket = -1;
+        pthread_exit(NULL); // sai da thread
+      } else if(request == 0){ //não tenho nada no socket, logo espero 10s para ver se vai aparecer alguém
+        puts("Request = 0 - cliente desconectou");
 
-         break; // sai do loop
-       }
-      }else{
+          puts("Encerrando conexão");
+          shutdown(cli->num_socket, SHUT_RDWR); // encerra conexao do socket
+          close(cli->num_socket); // destroi socket
+          cli->num_socket = -1;
+          pthread_exit(NULL); // sai da thread
+        }
+
+      if (request > 0){
         printf("\n ============== Mensagem recebida ==============\n");
         printf("%s\n", client_reply);
 
@@ -75,9 +67,8 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
             while ( request_lines[cont] != NULL ){// loop para separar todo resto do request por espaços
               cont++;
               request_lines[cont] = strtok(NULL," \t\r\n\v"); // era para ser por linha mas não presta
-              if (request_lines[cont] == NULL){
+              if (request_lines[cont] == NULL)
                 break;
-              }
             }
 
             for (int i = 0; i < 100; i++) { // procura pelo tipo de connection
@@ -92,7 +83,7 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
             if (strncmp(request_lines[2], "HTTP/1.0", 8) != 0 && strncmp(request_lines[2], "HTTP/1.1", 8) != 0){
               puts("Pedido errado.");
               char *message = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n<!doctype html><html><body>400 Bad Request</body></html>";
-              write(sock, message, strlen(message));
+              write(cli->num_socket, message, strlen(message));
             }else{
                 char *tokens[2]; // para dividir em nome do arquivo e extensao
 
@@ -109,33 +100,30 @@ void *connection_handler(void *socket_desc) { //aqui vai receber a mensagem do c
 
                   puts("Pedido errado.");
                   char *message = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n<!doctype html><html><body>400 Bad Request. (You need to request to image and text files)</body></html>";
-                  write(sock, message, strlen(message));
+                  write(cli->num_socket, message, strlen(message));
 
                 }
                 else if (strcmp(tokens[1], "html") == 0 || strcmp(tokens[1], "htm") == 0 || strcmp(tokens[1], "css") == 0 || strcmp(tokens[1], "js") == 0 || strcmp(tokens[1], "txt") == 0 ){
 
                   sem_wait(&mutex); // Evita que duas ou mais threads façam operacoes de IO ao mesmo tempo - lock semaphore
-                  text_handler(sock, request_lines[1], tokens[1]); // chama func de ler arquivos texto
+                  text_handler(cli->num_socket, request_lines[1], tokens[1]); // chama func de ler arquivos texto
                   sem_post(&mutex); // release semaphore
 
                 }else if (strcmp(tokens[1], "jpeg") == 0 || strcmp(tokens[1], "jpg") == 0 || strcmp(tokens[1], "png") == 0 || strcmp(tokens[1], "bmp") == 0 || strcmp(tokens[1], "gif") == 0 || strcmp(tokens[1], "webp") == 0|| strcmp(tokens[1], "ico") == 0 ){//requisição do tipo img
 
                   sem_wait(&mutex); // lock semaphore -- deve-se estudar aqui. Sera porque n pode ter mais de uma thread tentando escrever no socket ao mesmo tempo?
                   printf("Solicitei uma imagem ao servidor!\n");
-                  image_handler(sock, request_lines[1], tokens[1]); // chama func de ler arquivos de imagem (binarios?) -- existe apenas um semaforo, o q significa que só uma thread pode entrar nesses caminhos por vez, independente do cliente?
-                  printf("FIM DA RESPOSTA E VOLTOU PARA CÁ!!!!!!!!!!\n");
+                  image_handler(cli->num_socket, request_lines[1], tokens[1]); // chama func de ler arquivos de imagem (binarios?) -- existe apenas um semaforo, o q significa que só uma thread pode entrar nesses caminhos por vez, independente do cliente?
                   sem_post(&mutex); // release semaphore
-                  printf("Liberou  semaforo\n");
-                }else { // extensao que nao pertence as de acima.
+                } else { // extensao que nao pertence as de acima.
 
                   char *message = "HTTP/1.1 415 Unsupported Media Type\r\nConnection: close\r\n\r\n<!doctype html><html><body>415 Unsupported Media Type.</body></html>";
-                  write(sock, message, strlen(message));
+                  write(cli->num_socket, message, strlen(message));
 
                 }
               free(file_name);
-              printf("Liberando....\n" );
             }
-          }
-        }
+          }// if GE
+          pthread_exit(NULL); // sai da thread
       }
 }

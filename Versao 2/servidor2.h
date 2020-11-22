@@ -14,15 +14,28 @@
 
 #define PORT_NO 8080 // numero da porta
 #define BUFFER_SIZE 8192 // tamanho buffer do socket
-#define CONNECTION_NUMBER 20 // quantidade maxima de threads simultaneas
+#define MAX_CON 50 // quantidade maxima de threads simultaneas
 
 #define EOL "\r\n" // end of line
 #define EOL_SIZE 2
 
+struct  cliente{
+  int num_socket;
+  int num_set;
+  int qtd_conn;
+  int taxa;
+};
+
+struct thread_data{
+  int n_s;
+  int res;
+};
+
 sem_t mutex; // para controlar o contador de threads
-int clients[20];
 
 void image_handler(int socket, char *file_name, char *ext);
 void text_handler(int socket, char *file_name, char *ext);
+
+void *timer(void* arg);
 
 int main(int argc, char *argv[]);
