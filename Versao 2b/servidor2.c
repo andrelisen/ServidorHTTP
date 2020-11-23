@@ -69,7 +69,7 @@ int main(int argc, char *argv[]){
   int sd, max_sd, actv;
 
   for (;;){ // aceita conexoes - salva em novo socket
-
+    printf("Entrei no for ;;\n");
     FD_ZERO(&testset); // limpa conjunto
     FD_SET(server_sock,&testset); //add socket server ao conjunto
     for(int n = 0; n <  MAX_CON; n++){
