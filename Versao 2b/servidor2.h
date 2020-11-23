@@ -24,7 +24,7 @@ struct  cliente{
   int num_set;
   int qtd_conn;
   int taxa;
-  int ip;
+  char *ip;
 };
 
 struct thread_data{

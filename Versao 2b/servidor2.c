@@ -94,8 +94,8 @@ int main(int argc, char *argv[]){
       printf("\n#####\n");
       puts("Conexão aceita!");
       printf("Número de conexões:%d\n",++num_conn);
-      printf("Valor do ip do cliente=%i \n", client.sin_addr.s_addr);
-      printf("Valor do número da porta do socket=%i \n", client.sin_port);
+      printf("Valor do ip do cliente=%s \n", inet_ntoa(client.sin_addr));
+      printf("Valor do número da porta do socket=%d \n", ntohs(client.sin_port));
       printf("Valor do new_socket=%i\n", new_socket);
       printf("#####\n");
 
@@ -103,7 +103,9 @@ int main(int argc, char *argv[]){
         if(clients[l]->num_socket == -1){
            clients[l]->num_socket = new_socket;
            clients[l]->num_set = l;
-           clients[l]->ip =  client.sin_addr.s_addr;
+           clients[l]->ip = (char*)malloc(sizeof(inet_ntoa(client.sin_addr)));
+           clients[l]->ip =  inet_ntoa(client.sin_addr);
+           printf("Client ip: %s", clients[l]->ip);
            pthread_t sock_thread; // nova thread
            new_thread = pthread_create(&sock_thread, NULL, connection_handler, (void *)clients[l]);
            if(new_thread < 0){
