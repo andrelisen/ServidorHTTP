@@ -39,6 +39,7 @@ int main(int argc, char *argv[]){
     clients[m]->qtd_conn = 0;
     clients[m]->taxa = -1;
     clients[m]->ip = 0;
+    clients[m] ->flag_tempo = 0;
   }
 
 
@@ -104,7 +105,7 @@ int main(int argc, char *argv[]){
            clients[l]->num_socket = new_socket;
            clients[l]->num_set = l;
            clients[l]->ip = (char*)malloc(sizeof(inet_ntoa(client.sin_addr)));
-           clients[l]->ip =  inet_ntoa(client.sin_addr);
+           clients[l]->ip =  inet_ntoa(client.sin_addr); //coleta ip
            printf("Client ip: %s", clients[l]->ip);
            pthread_t sock_thread; // nova thread
            new_thread = pthread_create(&sock_thread, NULL, connection_handler, (void *)clients[l]);
@@ -136,15 +137,20 @@ int main(int argc, char *argv[]){
           struct thread_data tdata;
           tdata.n_s = clients[i]->num_set;
           tdata.res = 0;
-          pthread_t new_thread; // nova thread
-          pthread_create(&new_thread, NULL,timer, (void*)&tdata);
-          pthread_join(new_thread, NULL);
+          //checa se flag do clients mudou
+          if(clients[i]->flag_tempo == 1){
+            printf("entrei no if da flag do tempo!\n");
+            pthread_t new_thread; // nova thread
+            pthread_create(&new_thread, NULL,timer, (void*)&tdata); //cria thread para disparar timer
+            pthread_join(new_thread, NULL);
 
-          if(tdata.res == 1){
-            puts("Timer encerrado antes: atividade nova no socket");
-            pthread_t tid; // nova thread
-            pthread_create(&tid,NULL,connection_handler,(void *)clients[i]);
+            if(tdata.res == 1){
+              puts("Timer encerrado antes: atividade nova no socket");
+              pthread_t tid; // nova thread
+              pthread_create(&tid,NULL,connection_handler,(void *)clients[i]);
+            }
           }
+          
       }
   }
 }
@@ -185,6 +191,7 @@ void *timer(void * arg){
       clients[tdata->n_s]->qtd_conn = 0;
       clients[tdata->n_s]->taxa = -1;
       clients[tdata->n_s]->ip = 0;
+      clients[tdata->n_s]->flag_tempo = 0;
     }
   }
 

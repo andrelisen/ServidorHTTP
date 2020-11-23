@@ -25,6 +25,7 @@ struct  cliente{
   int qtd_conn;
   int taxa;
   char *ip;
+  int flag_tempo; //se 0, não dispara, se 1 dispara
 };
 
 struct thread_data{

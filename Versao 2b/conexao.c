@@ -124,6 +124,8 @@ void *connection_handler(void *cliente) { //aqui vai receber a mensagem do clien
               free(file_name);
             }
           }// if GE
+          cli->flag_tempo = 1;
+          printf("Saindo da thread e encerrando o tempo!\n");
           pthread_exit(NULL); // sai da thread
       }
 }
