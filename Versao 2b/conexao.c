@@ -28,6 +28,9 @@ void *connection_handler(void *cliente) { //aqui vai receber a mensagem do clien
 
     // pegar descritor do socket
     cli = (struct cliente *)cliente;
+    sem_wait(&mutex);
+    cli->flag_tempo = 0;
+    sem_post(&mutex);
     //int io_op = 0; // identifica se ocorreu operacao de IO dentro do loop
     int cont = 0;
     pthread_t new_thread;
@@ -42,7 +45,7 @@ void *connection_handler(void *cliente) { //aqui vai receber a mensagem do clien
         close(cli->num_socket); // destroi socket
         cli->num_socket = -1;
         pthread_exit(NULL); // sai da thread
-      } else if(request == 0){ //não tenho nada no socket, logo espero 10s para ver se vai aparecer alguém
+      } else if(request == 0){
         puts("Request = 0 - cliente desconectou");
 
           puts("Encerrando conexão");
@@ -124,8 +127,10 @@ void *connection_handler(void *cliente) { //aqui vai receber a mensagem do clien
               free(file_name);
             }
           }// if GE
+          sem_wait(&mutex);
           cli->flag_tempo = 1;
-          printf("Saindo da thread e encerrando o tempo!\n");
+          sem_post(&mutex);
+          printf("Saindo de conn_handler!\n");
           pthread_exit(NULL); // sai da thread
       }
 }

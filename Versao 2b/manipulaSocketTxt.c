@@ -43,11 +43,11 @@ void text_handler(int socket, char *file_name, char *ext){ // le e escreve arqui
           long bytes_read = ftell(fp);
           fseek(fp, 0, SEEK_SET);
 
-          char *mfull = (char*)malloc((strlen("HTTP/1.1 200 OK\r\nContent-Type: text/")+strlen(ext)+strlen("\r\nKeep-Alive: timeout=10\r\nConnection: keep-alive\r\n\r\n"))*sizeof(char));
+          char *mfull = (char*)malloc((strlen("HTTP/1.1 200 OK\r\nContent-Type: text/")+strlen(ext)+strlen("\r\nKeep-Alive: timeout=5\r\nConnection: keep-alive\r\n\r\n"))*sizeof(char));
           mfull[0] = '\0'; // inicializando mfull com string vazia para remover lixos de malloc
           strcat(mfull,"HTTP/1.1 200 OK\r\nContent-Type: text/");
           strcat(mfull,ext);
-          strcat(mfull, "\r\nKeep-Alive: timeout=10\r\nConnection: keep-alive\r\n\r\n");
+          strcat(mfull, "\r\nKeep-Alive: timeout=5\r\nConnection: keep-alive\r\n\r\n");
           puts(mfull); // pequena alteração aqui para fazer com que a mensagem do server seja de acordo com a extensao. Antes estava fixo jpeg.
 
           send(socket, mfull, strlen(mfull), 0); // Envia cabeçalho de resposta bem sucedida

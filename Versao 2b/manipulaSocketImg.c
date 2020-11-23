@@ -41,12 +41,12 @@ void image_handler(int socket, char *file_name, char *ext){ // le e escreve arqu
         puts("Imagem Encontrada.");
         int bytes;
         char buffer[BUFFER_SIZE];
-        char *mfull = (char*)malloc((strlen("HTTP/1.1 200 OK\r\nContent-Type: image/")+strlen(ext)+strlen("\r\nKeep-Alive: timeout=10\r\nConnection: keep-alive\r\n\r\n"))*sizeof(char));
+        char *mfull = (char*)malloc((strlen("HTTP/1.1 200 OK\r\nContent-Type: image/")+strlen(ext)+strlen("\r\nKeep-Alive: timeout=5\r\nConnection: keep-alive\r\n\r\n"))*sizeof(char));
         mfull[0] = '\0'; // inicializando mfull com string vazia para remover lixos de malloc
         strcat(mfull,"HTTP/1.1 200 OK\r\nContent-Type: image/");
 
         strcat(mfull,ext);
-        strcat(mfull, "\r\nKeep-Alive: timeout=10\r\nConnection: keep-alive\r\n\r\n");
+        strcat(mfull, "\r\nKeep-Alive: timeout=5\r\nConnection: keep-alive\r\n\r\n");
         puts(mfull); // pequena alteração aqui para fazer com que a mensagem do server seja de acordo com a extensao. Antes estava fixo jpeg.
 
         send(socket, mfull, strlen(mfull), 0);// send é um write especifico de socket, com mais opções, mas tem mesma função de write

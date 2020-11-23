@@ -39,6 +39,6 @@ void image_handler(int socket, char *file_name, char *ext);
 void text_handler(int socket, char *file_name, char *ext);
 
 void *timer(void* arg);
-void *thread_client(void* arg);
+void *cli_thread(void *arg);
 
 int main(int argc, char *argv[]);
