@@ -123,15 +123,42 @@ int main(int argc, char *argv[]){
         }
       }
     }
-    if(ini == 1){ // chama thread q verifica clientes?
-      puts("Criou thread para loop clientes");
-      pthread_t client_thread;
-      pthread_create(&client_thread, NULL, cli_thread, NULL);
-      ini = 0;
-    }
+    // if(ini == 1){ // chama thread q verifica clientes?
+    //   puts("Criou thread para loop clientes");
+    //   pthread_t client_thread;
+    //   pthread_create(&client_thread, NULL, cli_thread, NULL);
+    //   ini = 0;
+    // }
+    for (int i = 0; i < MAX_CON; i++){
+
+      // if (FD_ISSET(clients[i]->num_socket, &testset) && clients[i]->flag_tempo == 1){
+      //   printf("Atividade nova no socket %d\n", clients[i]->num_socket );
+      // //  printf("socket num %d, iss")
+      //   //atividade em um socket
+      //   pthread_t sock_thread; // nova thread
+      //   pthread_create(&sock_thread,NULL,connection_handler,(void *)clients[i]); && clients[i]->flag_tempo == 1
+      // }  else
+      if(!FD_ISSET(clients[i]->num_socket, &testset) && (clients[i]->num_socket != -1) ){
+        //socket aberto sem nada novo; disparar contador
+        printf("Nenhuma atividade no socket %d\n", clients[i]->num_socket );
+        struct thread_data tdata;
+        tdata.n_s = clients[i]->num_set;
+        tdata.res = 0;
+
+        pthread_t new_thread; // nova thread
+        pthread_create(&new_thread, NULL,timer, (void*)&tdata); //cria thread para disparar timer
+        pthread_join(new_thread, NULL);
+
+        // if(tdata.res == 1){
+        //   puts("Timer encerrado antes: atividade nova no socket");
+        //   pthread_t tid; // nova thread
+        //   pthread_create(&tid,NULL,connection_handler,(void *)clients[i]);
+        // }
+      }
 
 
   }
+}
   return 0;
 }
 
@@ -148,11 +175,11 @@ void *timer(void * arg){
     //  printf("Estou dentro do while do tempo\n");
     //  printf("Valor do start = %ld\n", start);
     //  printf("Valor do clock = %ld\n", clock());
-    if(FD_ISSET(clients[tdata->n_s]->num_socket, &testset) && clients[tdata->n_s]->flag_tempo == 1){ // le o socket de novo, se chegou algo no socket, sai do contador
-      printf("Teve uma nova requisição para este socket, abortando contagem\n");
-      x = 1;
-      break; //sai do while
-    }
+    // if(FD_ISSET(clients[tdata->n_s]->num_socket, &testset) && clients[tdata->n_s]->flag_tempo == 1){ // le o socket de novo, se chegou algo no socket, sai do contador
+    //   printf("Teve uma nova requisição para este socket, abortando contagem\n");
+    //   x = 1;
+    //   break; //sai do while
+    // }
   }
   if (x == 0){
     clock_t end = clock();
@@ -178,35 +205,10 @@ void *timer(void * arg){
   pthread_exit(NULL);
 }
 ////////////////////////////////////////////////////////
-void *cli_thread(void *arg){
-while(1){
-  for (int i = 0; i < MAX_CON; i++){
-
-    if (FD_ISSET(clients[i]->num_socket, &testset) && clients[i]->flag_tempo == 1){
-      printf("Atividade nova no socket %d\n", clients[i]->num_socket );
-    //  printf("socket num %d, iss")
-      //atividade em um socket
-      pthread_t sock_thread; // nova thread
-      pthread_create(&sock_thread,NULL,connection_handler,(void *)clients[i]);
-    }
-    if(!FD_ISSET(clients[i]->num_socket, &testset) && (clients[i]->num_socket != -1) && clients[i]->flag_tempo == 1){
-      //socket aberto sem nada novo; disparar contador
-      printf("Nenhuma atividade no socket %d\n", clients[i]->num_socket );
-      struct thread_data tdata;
-      tdata.n_s = clients[i]->num_set;
-      tdata.res = 0;
-
-      pthread_t new_thread; // nova thread
-      pthread_create(&new_thread, NULL,timer, (void*)&tdata); //cria thread para disparar timer
-
-
-      if(tdata.res == 1){
-        puts("Timer encerrado antes: atividade nova no socket");
-        pthread_t tid; // nova thread
-        pthread_create(&tid,NULL,connection_handler,(void *)clients[i]);
-      }
-    }
-  }
-}
-//  pthread_exit(NULL);
-}
+// void *cli_thread(void *arg){
+// while(1){
+//
+//   }
+// }
+// //  pthread_exit(NULL);
+// }

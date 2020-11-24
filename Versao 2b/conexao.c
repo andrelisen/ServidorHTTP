@@ -28,9 +28,9 @@ void *connection_handler(void *cliente) { //aqui vai receber a mensagem do clien
 
     // pegar descritor do socket
     cli = (struct cliente *)cliente;
-    sem_wait(&mutex);
+    //sem_wait(&mutex);
     cli->flag_tempo = 0;
-    sem_post(&mutex);
+  //  sem_post(&mutex);
     //int io_op = 0; // identifica se ocorreu operacao de IO dentro do loop
     int cont = 0;
     pthread_t new_thread;
@@ -127,9 +127,9 @@ void *connection_handler(void *cliente) { //aqui vai receber a mensagem do clien
               free(file_name);
             }
           }// if GE
-          sem_wait(&mutex);
+        //  sem_wait(&mutex);
           cli->flag_tempo = 1;
-          sem_post(&mutex);
+        //  sem_post(&mutex);
           printf("Saindo de conn_handler!\n");
           pthread_exit(NULL); // sai da thread
       }
